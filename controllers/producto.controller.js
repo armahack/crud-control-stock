@@ -38,7 +38,14 @@ exports.obtenerProductoPorId = async (req, res, next) => {
 // Crear un nuevo producto (con captura de error por código de barras duplicado)
 exports.crearProducto = async (req, res, next) => {
   try {
-    const nuevoProducto = await Producto.create(req.body);
+    const { nombre, codigoBarras, precio, stock, stockMinimo } = req.body;
+    const nuevoProducto = await Producto.create({
+      nombre,
+      codigoBarras: codigoBarras?.trim() || undefined,
+      precio,
+      stock,
+      stockMinimo
+    });
     res.status(201).json({
       ok: true,
       mensaje: 'Producto creado exitosamente en la base de datos',
@@ -60,7 +67,22 @@ exports.crearProducto = async (req, res, next) => {
 exports.actualizarProducto = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const productoActualizado = await Producto.findByIdAndUpdate(id, req.body, {
+    const actualizacion = {};
+    for (const campo of ['nombre', 'codigoBarras', 'precio', 'stock', 'stockMinimo']) {
+      if (req.body[campo] !== undefined) actualizacion[campo] = req.body[campo];
+    }
+
+    const quitarCodigoBarras = typeof actualizacion.codigoBarras === 'string'
+      && actualizacion.codigoBarras.trim() === '';
+    if (typeof actualizacion.codigoBarras === 'string') {
+      actualizacion.codigoBarras = actualizacion.codigoBarras.trim();
+    }
+    if (quitarCodigoBarras) delete actualizacion.codigoBarras;
+
+    const cambios = quitarCodigoBarras
+      ? { $set: actualizacion, $unset: { codigoBarras: 1 } }
+      : actualizacion;
+    const productoActualizado = await Producto.findByIdAndUpdate(id, cambios, {
       new: true,
       runValidators: true
     });

@@ -1,17 +1,34 @@
 const mongoose = require('mongoose');
-const dns = require('dns');
 
-// Forzar el uso de DNS de Google para resolver el SRV de Atlas
-dns.setServers(['8.8.8.8', '8.8.4.4']);
+let connectionPromise;
 
 const conectarDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`[MONGO DB] Conectado exitosamente: ${conn.connection.host}`);
-  } catch (error) {
-    console.error(`[MONGO DB ERROR]: ${error.message}`);
-    process.exit(1);
+  if (!process.env.MONGO_URI) {
+    throw new Error('Falta configurar la variable MONGO_URI');
   }
+
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  if (mongoose.connection.readyState === 0) {
+    connectionPromise = undefined;
+  }
+
+  if (!connectionPromise) {
+    connectionPromise = mongoose.connect(process.env.MONGO_URI)
+      .then(({ connection }) => {
+        console.log('[MONGO DB] Conectado exitosamente');
+        return connection;
+      })
+      .catch((error) => {
+        connectionPromise = undefined;
+        console.error(`[MONGO DB ERROR]: ${error.message}`);
+        throw error;
+      });
+  }
+
+  return connectionPromise;
 };
 
 module.exports = conectarDB;

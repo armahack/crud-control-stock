@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Stockroom Inventario",
+    "slug": "stockroom-inventario",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": { "supportsTablet": true },
+    "android": { "package": "com.stockroom.inventario" },
+    "plugins": ["expo-secure-store"],
+    "extra": {}
+  }
+}

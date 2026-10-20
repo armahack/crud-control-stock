@@ -4,6 +4,8 @@ import clienteAxios from '../api/axios';
 import { LogIn, Package } from 'lucide-react';
 
 export default function Login() {
+  const [registrando, setRegistrando] = useState(false);
+  const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,11 +19,14 @@ export default function Login() {
     setCargando(true);
 
     try {
-      const respuesta = await clienteAxios.post('/auth/login', { email, password });
+      const respuesta = await clienteAxios.post(
+        registrando ? '/auth/registro' : '/auth/login',
+        registrando ? { nombre, email, password } : { email, password }
+      );
       
       // Guardar el token en el almacenamiento del navegador
       localStorage.setItem('token', respuesta.data.token);
-      localStorage.setItem('usuario', JSON.stringify(respuesta.data.usuario));
+      localStorage.setItem('usuario', JSON.stringify(respuesta.data.datos));
 
       // Redirigir al Dashboard
       navigate('/dashboard');
@@ -40,7 +45,7 @@ export default function Login() {
             <Package size={32} />
           </div>
           <h1 className="text-2xl font-bold text-white">Sistema de Inventario</h1>
-          <p className="text-slate-400 text-sm mt-1">Ingresa tus credenciales para acceder</p>
+          <p className="text-slate-400 text-sm mt-1">{registrando ? 'Crea una cuenta para comenzar' : 'Ingresa tus credenciales para acceder'}</p>
         </div>
 
         {error && (
@@ -50,6 +55,18 @@ export default function Login() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {registrando && (
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Nombre</label>
+              <input
+                type="text"
+                required
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Correo Electrónico</label>
             <input
@@ -69,7 +86,8 @@ export default function Login() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Mínimo 6 caracteres"
+              minLength={6}
               className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-emerald-500 transition-colors"
             />
           </div>
@@ -80,9 +98,16 @@ export default function Login() {
             className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
           >
             <LogIn size={20} />
-            {cargando ? 'Iniciando sesión...' : 'Ingresar al Sistema'}
+            {cargando ? 'Un momento...' : registrando ? 'Crear cuenta' : 'Ingresar al Sistema'}
           </button>
         </form>
+        <button
+          type="button"
+          onClick={() => { setRegistrando((actual) => !actual); setError(''); }}
+          className="mt-5 w-full text-sm text-emerald-300 hover:text-emerald-200"
+        >
+          {registrando ? '¿Ya tenés cuenta? Iniciar sesión' : '¿Primera vez? Crear cuenta'}
+        </button>
       </div>
     </div>
   );

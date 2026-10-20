@@ -40,8 +40,7 @@ const options = {
                   properties: {
                     nombre: { type: 'string', example: 'Juan Pérez' },
                     email: { type: 'string', example: 'juan@email.com' },
-                    password: { type: 'string', example: '123456' },
-                    rol: { type: 'string', example: 'ADMIN' }
+                    password: { type: 'string', example: '123456' }
                   }
                 }
               }
@@ -69,6 +68,94 @@ const options = {
                   }
                 }
               }
+            }
+          },
+          '/api/auth/cambiar-password': {
+            patch: {
+              summary: 'Cambiar la contraseña de la sesión actual',
+              tags: ['Autenticación'],
+              security: [{ bearerAuth: [] }],
+              requestBody: {
+                required: true,
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      required: ['passwordActual', 'passwordNuevo'],
+                      properties: {
+                        passwordActual: { type: 'string' },
+                        passwordNuevo: { type: 'string', minLength: 6 }
+                      }
+                    }
+                  }
+                }
+              },
+              responses: {
+                200: { description: 'Contraseña actualizada' },
+                401: { description: 'Contraseña actual incorrecta o token inválido' }
+              }
+            }
+          },
+          '/api/usuarios': {
+            get: {
+              summary: 'Listar usuarios (solo ADMIN)',
+              tags: ['Usuarios'],
+              security: [{ bearerAuth: [] }],
+              responses: { 200: { description: 'Lista de usuarios' }, 403: { description: 'Permisos insuficientes' } }
+            },
+            post: {
+              summary: 'Crear usuario con rol (solo ADMIN)',
+              tags: ['Usuarios'],
+              security: [{ bearerAuth: [] }],
+              requestBody: {
+                required: true,
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      required: ['nombre', 'email', 'password', 'rol'],
+                      properties: {
+                        nombre: { type: 'string' },
+                        email: { type: 'string', format: 'email' },
+                        password: { type: 'string', minLength: 6 },
+                        rol: { type: 'string', enum: ['ADMIN', 'OPERADOR', 'VISITANTE'] }
+                      }
+                    }
+                  }
+                }
+              },
+              responses: { 201: { description: 'Usuario creado' }, 403: { description: 'Permisos insuficientes' } }
+            }
+          },
+          '/api/usuarios/{id}': {
+            put: {
+              summary: 'Actualizar nombre, email o rol (solo ADMIN)',
+              tags: ['Usuarios'],
+              security: [{ bearerAuth: [] }],
+              parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+              requestBody: {
+                required: true,
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        nombre: { type: 'string' },
+                        email: { type: 'string', format: 'email' },
+                        rol: { type: 'string', enum: ['ADMIN', 'OPERADOR', 'VISITANTE'] }
+                      }
+                    }
+                  }
+                }
+              },
+              responses: { 200: { description: 'Usuario actualizado' }, 403: { description: 'Permisos insuficientes' } }
+            },
+            delete: {
+              summary: 'Eliminar usuario (solo ADMIN)',
+              tags: ['Usuarios'],
+              security: [{ bearerAuth: [] }],
+              parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+              responses: { 200: { description: 'Usuario eliminado' }, 403: { description: 'Permisos insuficientes' } }
             }
           },
           responses: {
@@ -216,7 +303,7 @@ const options = {
                 schema: {
                   type: 'object',
                   properties: {
-                    producto: { type: 'string', example: '65f1234567890abc' },
+                    productoId: { type: 'string', example: '65f1234567890abc' },
                     tipo: { type: 'string', example: 'SALIDA' },
                     cantidad: { type: 'number', example: 2 },
                     motivo: { type: 'string', example: 'Venta de mostrador' }

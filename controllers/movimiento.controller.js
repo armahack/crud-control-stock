@@ -6,10 +6,12 @@ exports.registrarMovimiento = async (req, res, next) => {
   try {
     const { productoId, tipo, cantidad, motivo } = req.body;
 
-    if (!productoId || !tipo || !cantidad) {
+    const cantidadNumerica = Number(cantidad);
+    if (!productoId || !['ENTRADA', 'SALIDA'].includes(tipo)
+      || !Number.isInteger(cantidadNumerica) || cantidadNumerica < 1) {
       return res.status(400).json({
         ok: false,
-        mensaje: 'productoId, tipo y cantidad son obligatorios'
+        mensaje: 'productoId, un tipo válido y una cantidad entera mayor a cero son obligatorios'
       });
     }
 
@@ -20,18 +22,18 @@ exports.registrarMovimiento = async (req, res, next) => {
     }
 
     // Si es SALIDA, verificar que haya stock suficiente
-    if (tipo === 'SALIDA' && producto.stock < cantidad) {
+    if (tipo === 'SALIDA' && producto.stock < cantidadNumerica) {
       return res.status(400).json({
         ok: false,
-        mensaje: `Stock insuficiente. Stock actual: ${producto.stock}, intentas vender: ${cantidad}`
+        mensaje: `Stock insuficiente. Stock actual: ${producto.stock}, intentas vender: ${cantidadNumerica}`
       });
     }
 
     // Actualizar el stock en el producto
     if (tipo === 'ENTRADA') {
-      producto.stock += Number(cantidad);
+      producto.stock += cantidadNumerica;
     } else if (tipo === 'SALIDA') {
-      producto.stock -= Number(cantidad);
+      producto.stock -= cantidadNumerica;
     }
 
     await producto.save();

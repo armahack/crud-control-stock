@@ -1,36 +1,16 @@
 require('dotenv').config();
-const path = require('path');
-const express = require('express');
-const cors = require('cors');
+const app = require('./app');
 const conectarDB = require('./config/db');
-const productoRoutes = require('./routes/producto.routes');
-const authRoutes = require('./routes/auth.routes');
-const movimientoRoutes = require('./routes/movimiento.routes');
-const usuarioRoutes = require('./routes/usuarioRoutes'); // <--- NUEVO: Importar rutas de usuarios
-const setupSwagger = require('./config/swagger');
-
-const app = express();
-
-// Middlewares
-app.use(cors());
-app.use(express.json());
-
-// Servir la interfaz web de pruebas del backend
-app.use(express.static(path.join(__dirname, 'public', 'public')));
-
-// Conexión a Base de Datos
-conectarDB();
-
-// Rutas API
-app.use('/api/productos', productoRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/movimientos', movimientoRoutes);
-app.use('/api/usuarios', usuarioRoutes); // <--- NUEVO: Registrar endpoint de usuarios
-
-// Documentación Swagger
-setupSwagger(app);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`[SERVER] Escuchando en http://localhost:${PORT}`);
+const iniciarServidor = async () => {
+  await conectarDB();
+  app.listen(PORT, () => {
+    console.log(`[SERVER] Escuchando en http://localhost:${PORT}`);
+  });
+};
+
+iniciarServidor().catch((error) => {
+  console.error(`[SERVER ERROR]: ${error.message}`);
+  process.exitCode = 1;
 });

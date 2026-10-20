@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101722" />
+    <meta name="description" content="Panel web para administrar el inventario conectado a la API y MongoDB." />
+    <title>Stockroom | Panel de inventario</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div id="toast-region" class="toast-region" aria-live="polite"></div>
+
+    <section id="auth-screen" class="auth-screen">
+      <div class="auth-decoration auth-decoration-one"></div>
+      <div class="auth-decoration auth-decoration-two"></div>
+      <div class="auth-card">
+        <a class="brand brand-auth" href="/" aria-label="Stockroom inicio">
+          <span class="brand-mark"><span></span><span></span><span></span><span></span></span>
+          <span>stockroom<span class="brand-dot">.</span></span>
+        </a>
+        <div class="auth-copy">
+          <p class="eyebrow">GESTIÓN DE INVENTARIO</p>
+          <h1 id="auth-title">Todo tu stock,<br /><span>en un solo lugar.</span></h1>
+          <p id="auth-description">Ingresá para administrar los productos y movimientos de tu negocio.</p>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <label>
+            Correo electrónico
+            <input name="email" type="email" autocomplete="email" placeholder="nombre@negocio.com" required />
+          </label>
+          <label>
+            Contraseña
+            <input name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña" minlength="6" required />
+          </label>
+          <button class="button button-primary button-wide" type="submit">
+            <span>Ingresar al panel</span><span aria-hidden="true">→</span>
+          </button>
+        </form>
+
+        <form id="register-form" class="auth-form" hidden>
+          <label>
+            Nombre
+            <input name="nombre" autocomplete="name" placeholder="Tu nombre" required />
+          </label>
+          <label>
+            Correo electrónico
+            <input name="email" type="email" autocomplete="email" placeholder="nombre@negocio.com" required />
+          </label>
+          <label>
+            Contraseña
+            <input name="password" type="password" autocomplete="new-password" placeholder="Al menos 6 caracteres" minlength="6" required />
+          </label>
+          <button class="button button-primary button-wide" type="submit">
+            <span>Crear cuenta</span><span aria-hidden="true">→</span>
+          </button>
+        </form>
+
+        <p class="auth-switch">
+          <span id="auth-switch-label">¿Primera vez por acá?</span>
+          <button id="auth-switch-button" type="button">Crear cuenta</button>
+        </p>
+        <p class="auth-note"><span class="status-dot"></span> Conexión segura con la API de inventario</p>
+      </div>
+      <div class="auth-side-note">Inventario claro. Negocio en marcha.</div>
+    </section>
+
+    <div id="app-screen" class="app-screen" hidden>
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="Stockroom inicio">
+          <span class="brand-mark"><span></span><span></span><span></span><span></span></span>
+          <span>stockroom<span class="brand-dot">.</span></span>
+        </a>
+        <div class="workspace-label">ESPACIO DE TRABAJO</div>
+        <nav class="side-nav" aria-label="Navegación principal">
+          <a class="nav-link active" href="#resumen"><span class="nav-icon">▦</span> Resumen</a>
+          <a class="nav-link" href="#productos"><span class="nav-icon">▤</span> Productos</a>
+          <a class="nav-link" href="#movimientos"><span class="nav-icon">↕</span> Movimientos</a>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="api-status"><span class="status-dot"></span><span><strong>API conectada</strong><small>MongoDB Atlas</small></span></div>
+          <a class="docs-link" href="/api/docs" target="_blank" rel="noreferrer">Documentación de API <span>↗</span></a>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">Mi negocio <span>/</span> <strong>Inventario</strong></div>
+          <div class="topbar-user">
+            <div class="avatar" id="user-avatar">U</div>
+            <div class="user-copy"><strong id="user-name">Usuario</strong><small id="user-role">Cuenta activa</small></div>
+            <button id="logout-button" class="icon-button logout-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión">↗</button>
+          </div>
+        </header>
+
+        <div class="page-content">
+          <section id="resumen" class="welcome-row">
+            <div>
+              <p class="eyebrow">PANEL DE CONTROL</p>
+              <h1>Tu inventario, <span>bajo control.</span></h1>
+              <p class="welcome-subtitle">Un vistazo rápido a lo que pasa en tu negocio.</p>
+            </div>
+            <button id="refresh-button" class="button button-light" type="button"><span class="refresh-icon">↻</span> Actualizar datos</button>
+          </section>
+
+          <section class="stats-grid" aria-label="Resumen de inventario">
+            <article class="stat-card">
+              <div class="stat-heading"><span class="stat-icon icon-violet">▤</span><span class="stat-caption">CATÁLOGO</span></div>
+              <p class="stat-value" id="total-products">—</p>
+              <p class="stat-label">Productos registrados</p>
+            </article>
+            <article class="stat-card">
+              <div class="stat-heading"><span class="stat-icon icon-amber">⌁</span><span class="stat-caption">ATENCIÓN</span></div>
+              <p class="stat-value" id="low-stock-count">—</p>
+              <p class="stat-label">Productos por reponer</p>
+            </article>
+            <article class="stat-card">
+              <div class="stat-heading"><span class="stat-icon icon-green">↕</span><span class="stat-caption">ACTIVIDAD</span></div>
+              <p class="stat-value" id="movement-count">—</p>
+              <p class="stat-label">Movimientos registrados</p>
+            </article>
+          </section>
+
+          <section id="low-stock-section" class="low-stock-panel" hidden>
+            <div class="panel-title-row">
+              <div class="section-heading">
+                <span class="section-icon amber-text">!</span>
+                <div><h2>Para tener en cuenta</h2><p>Estos productos llegaron a su stock mínimo.</p></div>
+              </div>
+              <span class="attention-tag">REPOSICIÓN</span>
+            </div>
+            <div id="low-stock-list" class="low-stock-list"></div>
+          </section>
+
+          <section id="productos" class="panel products-panel">
+            <div class="panel-title-row">
+              <div class="section-heading">
+                <span class="section-icon violet-text">▤</span>
+                <div><h2>Productos</h2><p>Consultá y mantené al día tu catálogo.</p></div>
+              </div>
+              <button id="new-product-button" class="button button-primary" type="button"><span>＋</span> Nuevo producto</button>
+            </div>
+            <div class="table-toolbar">
+              <label class="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input id="search-input" type="search" placeholder="Buscar por nombre o código..." aria-label="Buscar productos" />
+              </label>
+              <span id="product-result-count" class="result-count"></span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>PRODUCTO</th><th>CÓDIGO</th><th>PRECIO</th><th>STOCK</th><th>ESTADO</th><th></th></tr></thead>
+                <tbody id="products-table-body"></tbody>
+              </table>
+              <div id="products-empty" class="empty-state" hidden>
+                <span class="empty-icon">▤</span><strong>No encontramos productos</strong>
+                <p>Probá con otra búsqueda o agregá tu primer producto.</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="movimientos" class="lower-grid">
+            <article class="panel movement-form-panel">
+              <div class="section-heading">
+                <span class="section-icon green-text">↕</span>
+                <div><h2>Registrar movimiento</h2><p>Actualizá las existencias.</p></div>
+              </div>
+              <form id="movement-form" class="movement-form">
+                <label>Producto<select name="productoId" id="movement-product" required></select></label>
+                <div class="form-two-columns">
+                  <label>Tipo<select name="tipo" required><option value="ENTRADA">Entrada</option><option value="SALIDA">Salida</option></select></label>
+                  <label>Cantidad<input name="cantidad" type="number" min="1" step="1" placeholder="0" required /></label>
+                </div>
+                <label>Motivo <span class="optional-label">OPCIONAL</span><input name="motivo" maxlength="160" placeholder="Ej. Compra a proveedor" /></label>
+                <button class="button button-dark button-wide" type="submit">Guardar movimiento <span>→</span></button>
+              </form>
+            </article>
+
+            <article class="panel history-panel">
+              <div class="panel-title-row history-heading">
+                <div class="section-heading">
+                  <span class="section-icon blue-text">◷</span>
+                  <div><h2>Últimos movimientos</h2><p>Actividad reciente del inventario.</p></div>
+                </div>
+              </div>
+              <div id="movement-history" class="movement-history"></div>
+              <div id="history-empty" class="history-empty" hidden>Todavía no hay movimientos registrados.</div>
+            </article>
+          </section>
+
+          <footer class="page-footer"><span>Stockroom · Gestión simple, decisiones claras.</span><span id="last-updated"></span></footer>
+        </div>
+      </main>
+    </div>
+
+    <dialog id="product-dialog" class="product-dialog">
+      <form id="product-form" class="product-form" method="dialog">
+        <div class="dialog-heading">
+          <div><p class="eyebrow">CATÁLOGO</p><h2 id="product-dialog-title">Nuevo producto</h2><p id="product-dialog-description">Completá los datos para agregarlo al inventario.</p></div>
+          <button id="close-dialog-button" class="icon-button close-dialog" type="button" aria-label="Cerrar">×</button>
+        </div>
+        <input name="productId" type="hidden" />
+        <label>Nombre del producto<input name="nombre" maxlength="120" placeholder="Ej. Café molido 500 g" required /></label>
+        <label>Código de barras <span class="optional-label">OPCIONAL</span><input name="codigoBarras" placeholder="Ej. 7791234567890" /></label>
+        <div class="form-two-columns">
+          <label>Precio<input name="precio" type="number" min="0" step="0.01" placeholder="0,00" required /></label>
+          <label>Stock inicial<input name="stock" type="number" min="0" step="1" value="0" required /></label>
+        </div>
+        <label>Stock mínimo<input name="stockMinimo" type="number" min="0" step="1" value="5" required /></label>
+        <div class="dialog-actions">
+          <button id="cancel-dialog-button" class="button button-light" type="button">Cancelar</button>
+          <button id="save-product-button" class="button button-primary" type="submit">Guardar producto <span>→</span></button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>
