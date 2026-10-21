@@ -1,0 +1,178 @@
+GUION DE EXPOSICIÓN: SISTEMA FULL STACK DE INVENTARIO
+Exposición para 5 personas
+
+Duración estimada: entre 3 y 4 minutos por persona, incluyendo una demostración breve.
+La duración depende del ritmo y de las pantallas que se muestren.
+
+
+PERSONA 1 - PROBLEMA, OBJETIVO Y ARQUITECTURA
+
+Hola, buenos días/tardes. Hoy vamos a presentar nuestro sistema de inventario. El objetivo
+es ayudar a organizar productos, controlar las cantidades disponibles y dejar un historial
+de los cambios que se hacen en el stock.
+
+En un negocio, llevar el inventario en forma manual o en varios archivos puede dificultar
+responder preguntas simples: qué productos hay, cuántas unidades quedan y qué movimientos
+explican los cambios. Para resolver parte de ese problema, construimos una aplicación
+integrada por una API, una base de datos y dos clientes: un panel web y una aplicación para
+Android.
+
+El flujo general es el siguiente: el usuario interactúa con el panel web o con la app
+móvil; ese cliente envía solicitudes HTTP a la API; la API valida la solicitud y los
+permisos, y consulta o actualiza la base de datos MongoDB. Los clientes no se conectan
+directamente a MongoDB. Esto concentra las reglas de negocio y la autorización en el
+servidor.
+
+La API está desarrollada con Node.js y Express. Mongoose define los modelos y permite
+comunicarse con MongoDB. El código se organiza en rutas, controladores, modelos y
+middlewares: las rutas reciben las solicitudes, los controladores implementan las
+operaciones, los modelos describen los datos y los middlewares verifican la autenticación,
+los roles y los errores.
+
+El panel web está hecho con React y Vite. La aplicación Android usa React Native y Expo.
+Ambos consumen la misma API, por lo que comparten los datos y las reglas del servidor.
+
+En esta exposición vamos a recorrer el catálogo, los movimientos, el acceso y la integración
+de los clientes. Al final comentaremos qué está implementado y qué conviene probar o mejorar.
+
+Para empezar, mi compañero/a va a mostrar cómo se administra el catálogo de productos y cómo
+se detecta el stock bajo.
+
+
+PERSONA 2 - PRODUCTOS, CATÁLOGO Y ROLES
+
+Cada producto puede tener nombre, código de barras, precio, stock y stock mínimo. El stock
+mínimo sirve como referencia para detectar cuándo un producto necesita atención: por
+ejemplo, cuando las unidades disponibles son iguales o inferiores a ese valor.
+
+El sistema permite consultar el catálogo y realizar operaciones de alta, consulta,
+modificación y baja. También permite buscar productos por nombre o código de barras desde
+la aplicación móvil. La API valida los datos del modelo, por ejemplo que los valores
+numéricos respeten las reglas establecidas, y evita reutilizar un código de barras que ya
+pertenece a otro producto.
+
+La lista de productos puede consultarse sin iniciar sesión. En cambio, las operaciones de
+creación y modificación requieren una cuenta ADMIN u OPERADOR, y eliminar productos está
+reservado a ADMIN. La ruta de stock bajo también requiere autenticación. Los permisos no
+dependen solamente de qué botones se muestran en la interfaz: el servidor vuelve a
+validarlos en cada operación.
+
+En la pantalla de inventario se puede ver el catálogo, buscar productos y consultar el
+resumen de stock. La aplicación móvil muestra además avisos de productos que llegaron a su
+stock mínimo o están por debajo. Así, la función de stock bajo no es solo una consulta
+interna del backend: está conectada a una ruta de la API y se utiliza en la app.
+
+Las respuestas de la API se envían en JSON. Por ejemplo, al consultar productos, el servidor
+devuelve una lista en la propiedad “datos”. El cliente lee esa respuesta y muestra los
+productos en pantalla.
+
+Si hacemos una demostración, podemos iniciar sesión con una cuenta de prueba, abrir el
+inventario y buscar un producto por nombre o código. Si contamos con permisos de operador,
+también podemos mostrar el formulario para crear o editar un producto. Para una exposición
+sin acceso a una cuenta adecuada, podemos explicar esos pasos sin modificar datos reales.
+
+Ahora mi compañero/a va a explicar cómo registramos entradas y salidas, y cómo esas
+operaciones afectan las existencias.
+
+
+PERSONA 3 - MOVIMIENTOS E HISTORIAL
+
+Conocer el stock actual es importante, pero también lo es saber cómo llegó a ese valor.
+Para eso el sistema registra movimientos de tipo ENTRADA o SALIDA. Cada movimiento incluye
+el producto, el tipo, una cantidad entera mayor que cero, el usuario que lo registró, la
+fecha y, si se desea, un motivo.
+
+Cuando llega una entrada, el servidor suma la cantidad al stock. Cuando se registra una
+salida, la resta. Antes de guardar una salida, comprueba que haya unidades suficientes; si
+no alcanza el stock, rechaza la operación. Por ejemplo, si hay diez unidades y se registra
+una salida de tres, el stock pasa a siete y el movimiento queda en el historial.
+
+El historial se consulta desde la aplicación y muestra los datos relacionados del producto
+y del usuario. La API exige autenticación para consultar el historial y para registrar
+nuevos movimientos. La interfaz también comprueba que la cantidad ingresada sea válida y
+presenta los errores que devuelve el servidor.
+
+Hay una mejora técnica importante que debemos reconocer: el código actualiza el producto y
+después crea el registro del movimiento como dos operaciones separadas. Si una de ellas
+fallara a mitad del proceso, los datos podrían quedar desincronizados. Para un sistema más
+robusto, se podría utilizar una transacción de MongoDB, siempre que la configuración de la
+base la soporte, y agregar pruebas que cubran ese fallo.
+
+En la demostración podemos elegir un producto de prueba, registrar una entrada y comprobar
+que cambió el stock. Después podemos registrar una salida válida y consultar el historial.
+No conviene realizar estas pruebas sobre productos reales del entorno publicado.
+
+Ya vimos el catálogo y los movimientos. Ahora vamos a explicar cómo se protege el acceso y
+cómo se conectan los distintos clientes con la API.
+
+
+PERSONA 4 - AUTENTICACIÓN, PERMISOS Y CLIENTES
+
+El sistema permite registrar usuarios e iniciar sesión. Las contraseñas se almacenan
+protegidas mediante bcrypt; no se guardan como texto legible. Al iniciar sesión
+correctamente, la API entrega un token JWT con una duración de ocho horas. El cliente envía
+ese token en las solicitudes que requieren autenticación.
+
+El servidor comprueba que el token sea válido y que la cuenta siga existiendo. Después
+aplica los permisos correspondientes al rol:
+
+- ADMIN puede administrar usuarios y productos, además de registrar movimientos.
+- OPERADOR puede crear y editar productos y registrar movimientos, pero no eliminar
+  productos ni administrar usuarios.
+- VISITANTE puede consultar el catálogo y el historial, y cambiar su propia contraseña,
+  pero no realizar operaciones de administración.
+
+En una base vacía, el primer registro obtiene el rol ADMIN. Los registros públicos
+posteriores obtienen VISITANTE. En una base ya existente, la administración de cuentas y
+roles queda a cargo de una persona administradora, o de la configuración ADMIN_EMAIL del
+backend.
+
+El panel web ofrece acceso y funciones de inventario a través de la API. La app móvil
+también permite autenticarse, guardar la sesión de forma segura en el dispositivo con
+Expo SecureStore, y utilizar el catálogo, las alertas, los movimientos y la cuenta. En la
+APK, la dirección de la API se define al compilar y queda incorporada en esa versión; para
+cambiarla es necesario generar otra APK.
+
+La API cuenta además con documentación Swagger en /api/docs. Las pruebas automatizadas
+incluyen salud de la API, autenticación, permisos, administración de usuarios y
+validaciones de movimientos. En la verificación más reciente pasaron diez pruebas del
+backend.
+
+Para cerrar, mi compañero/a va a resumir el estado actual, la publicación y las mejoras que
+quedan como próximos pasos.
+
+
+PERSONA 5 - ESTADO, DEMOSTRACIÓN Y CONCLUSIÓN
+
+El proyecto reúne las piezas principales de una aplicación full stack: un backend con
+Express, una base de datos MongoDB, un panel web React/Vite y una aplicación Android con
+React Native y Expo. La API se encuentra desplegada en Vercel, y tanto el panel como la APK
+se configuran para conectarse a ella.
+
+La APK release de prueba ya fue generada, instalada y probada por el usuario, quien confirmó
+que funciona correctamente. Se verificaron su firma de Android, su paquete, su versión y la
+presencia del bundle de la aplicación y de la URL esperada de la API. La firma es de
+depuración, adecuada para instalar y probar, pero no para publicar en Google Play. Para
+las pruebas manuales, usá cuentas y productos de prueba: esta APK opera contra el entorno
+publicado.
+
+El proyecto sí tiene la estructura y las funciones de un sistema full stack: API con
+Express/MongoDB, panel web React/Vite y app Android React Native/Expo conectados por la API.
+Sin embargo, no puedo certificar cada punto de una consigna que no está disponible como
+rúbrica en el repositorio. Antes de exponer, hay que confirmar que la guía refleja la
+versión implementada y que las funciones que se muestran corresponden a la rúbrica de la
+materia.
+
+Como mejoras futuras, proponemos hacer transaccional la actualización del stock junto con
+la creación del movimiento; ampliar las pruebas para fallos y casos límite; y, si se va a
+distribuir fuera de las pruebas, configurar una clave de firma de producción y un proceso
+seguro para conservarla. Antes de presentar, también es importante revisar la rúbrica o
+consigna de la materia para confirmar que no haya requisitos adicionales.
+
+En conclusión, construimos una solución que permite consultar y administrar inventario
+desde clientes web y Android, con persistencia en MongoDB y reglas centralizadas en una
+API. El sistema tiene funciones principales implementadas y verificaciones automatizadas;
+la prueba final en el dispositivo y las mejoras mencionadas son los siguientes pasos.
+
+Muchas gracias por escucharnos. A continuación, podemos hacer una demostración breve con
+una cuenta y datos de prueba, o mostrar la documentación de la API.
